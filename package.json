@@ -1,0 +1,16 @@
+{
+	"name": "djeo-ymaps",
+	"author": "Vladimir Elistratov",
+	"description": "Yandex Maps API engine for the djeo library",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/vvoovv/djeo-ymaps"
+	},
+	"bugs": "https://github.com/vvoovv/djeo-ymaps/issues",
+	"dependencies": {
+		"djeo": "0.1.0"
+	},
+	"keywords": ["djeo", "geo"],
+	"homepage": "http://djeo.org",
+	"icon": "http://djeo.github.com/djeo25.png"
+}
