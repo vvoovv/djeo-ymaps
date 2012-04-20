@@ -11,7 +11,7 @@ define([
 
 var Y = window.YMaps;
 
-var engineEvents = {onclick: "Click", onmouseover: "MouseEnter", onmouseout: "MouseLeave"};
+var engineEvents = {click: "Click", mouseover: "MouseEnter", mouseout: "MouseLeave"};
 
 var supportedLayers = {
 	ROADMAP: "MAP",
@@ -92,9 +92,9 @@ return declare([Engine], {
 		return this.ge;
 	},
 	
-	connect: function(feature, event, context, method) {
+	on: function(feature, event, method, context) {
 		// normalize the callback function
-		method = this.normalizeCallback(feature, event, context, method);
+		method = this.normalizeCallback(feature, event, method, context);
 		var connections,
 			featureType = feature.getType();
 		if (featureType == "MultiPolygon" || featureType == "MultiLineString") {
@@ -119,15 +119,11 @@ return declare([Engine], {
 		else connections.cleanup();
 	},
 	
-	normalizeCallback: function(feature, event, context, method) {
+	normalizeCallback: function(feature, event, method, context) {
 		// summary:
 		//		Normalizes callback function for events
-		if (method) {
-			method = lang.hitch(context, method);
-		}
-		else method = context;
 		return function(shape, nativeEvent){
-			method({
+			method.call(context, {
 				type: event,
 				event: nativeEvent,
 				feature: feature
