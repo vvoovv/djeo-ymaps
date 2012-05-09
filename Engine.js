@@ -14,9 +14,9 @@ var Y = window.YMaps;
 var engineEvents = {click: "Click", mouseover: "MouseEnter", mouseout: "MouseLeave"};
 
 var supportedLayers = {
-	ROADMAP: "MAP",
-	SATELLITE: "SATELLITE",
-	HYBRID: "HYBRID"
+	roadmap: "MAP",
+	satellite: "SATELLITE",
+	hybrid: "HYBRID"
 };
 
 return declare([Engine], {
@@ -141,6 +141,7 @@ return declare([Engine], {
 	},
 	
 	enableLayer: function(layerId, enabled) {
+		layerId = layerId.toLowerCase();
 		if (enabled && supportedLayers[layerId]) this.ymap.setType(Y.MapType[supportedLayers[layerId]]);
 	}
 });
