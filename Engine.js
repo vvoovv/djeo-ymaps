@@ -79,10 +79,6 @@ return declare([Engine], {
 	createContainer: function(feature) {
 	},
 	
-	prepare: function() {
-		this.zoomTo( this.map.extent );
-	},
-	
 	appendChild: function(child, feature) {
 		this.ymap.addOverlay(child);
 	},
