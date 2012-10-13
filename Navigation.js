@@ -8,14 +8,10 @@ return declare(null, {
 		if (enable === undefined) enable = true;
 		var ymap = this.map.engine.ymap;
 		if (enable) {
-			ymap.enableDragging();
-			ymap.enableDblClickZoom();
-			ymap.enableScrollZoom();
+			ymap.behaviors.enable(["drag", "dblClickZoom", "scrollZoom"]);
 		}
 		else {
-			ymap.disableScrollZoom();
-			ymap.disableDblClickZoom();
-			ymap.disableDragging();
+			ymap.behaviors.disable(["scrollZoom", "dblClickZoom", "drag"]);
 		}
 	}
 });

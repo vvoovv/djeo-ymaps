@@ -15,9 +15,9 @@ var Placemark = declare([P], {
 	},
 
 	makePoint: function(feature, coords) {
-		return new Y.Placemark(new YMaps.GeoPoint(coords[0], coords[1]), {
+		return new Y.Placemark(coords, {
 			hasBalloon: false,
-			hideIcon: false
+			hideIconOnBalloonOpen: false
 		});
 	},
 
@@ -26,11 +26,7 @@ var Placemark = declare([P], {
 	},
 
 	_makeLineString: function(coords) {
-		var points = [];
-		array.forEach(coords, function(point) {
-			points.push(new Y.GeoPoint(point[0],point[1]));
-		});
-		return new Y.Polyline(points, {
+		return new Y.Polyline(coords, {
 			hasBalloon: false
 		});
 	},
@@ -40,24 +36,9 @@ var Placemark = declare([P], {
 	},
 
 	_makePolygon: function(coords) {
-		var points = [],
-			polygonOptions = {hasBalloon: false};
-		array.forEach(coords[0], function(point) {
-			points.push(new Y.GeoPoint(point[0],point[1]));
+		return new Y.Polygon(coords, {
+			hasBalloon: false
 		});
-		// treat the case of holes in the polygon
-		if (coords.length > 1) {
-			var interiors = [];
-			for(var i=1; i<coords.length; i++) {
-				var _points = [];
-				array.forEach(coords[i], function(point){
-					_points.push(new Y.GeoPoint(point[0],point[1]));
-				});
-				interiors.push(_points);
-			}
-			polygonOptions.interiors = interiors;
-		}
-		return new Y.Polygon(points, polygonOptions);
 	},
 	
 	makeMultiLineString: function(feature, coords) {
@@ -84,11 +65,13 @@ var Placemark = declare([P], {
 			src = P.getImgSrc(calculatedStyle, specificStyle, specificShapeStyle),
 			isVectorShape = true,
 			scale = P.getScale(calculatedStyle, specificStyle, specificShapeStyle),
-			yStyle = placemark.getStyle() || new Y.Style(),
-			iconStyle = yStyle.iconStyle || new Y.IconStyle();
+			iconImageHref = placemark.options.get("iconImageHref"),
+			// options
+			o = {}
+		;
 
 		if (!shapeType && src) isVectorShape = false;
-		else if (!P.shapes[shapeType] && !iconStyle.href)
+		else if (!P.shapes[shapeType] && !iconImageHref)
 			// set default value for the shapeType only if we haven't already styled the feature (!iconStyle.href)
 			shapeType = P.defaultShapeType;
 
@@ -96,38 +79,37 @@ var Placemark = declare([P], {
 		var size = isVectorShape ? P.getSize(calculatedStyle, specificStyle, specificShapeStyle) : P.getImgSize(calculatedStyle, specificStyle, specificShapeStyle);
 		if (size) {
 			var anchor = isVectorShape ? [size[0]/2, size[1]/2] : P.getAnchor(calculatedStyle, specificStyle, specificShapeStyle, size);
-			iconStyle.size = new YMaps.Point(scale*size[0], scale*size[1]);
-			iconStyle.offset = new YMaps.Point(-scale*anchor[0], -scale*anchor[1]);
+			o.iconImageSize = [scale*size[0], scale*size[1]];
+			o.iconOffset = [-scale*anchor[0], -scale*anchor[1]];
 		}
-		else if (iconStyle.href) {
+		else if (iconImageHref) {
 			// check if we can apply relative scale (rScale)
 			var rScale = P.get("rScale", calculatedStyle, specificStyle, specificShapeStyle);
 			if (rScale !== undefined) {
-				iconStyle.size.x *= rScale;
-				iconStyle.size.y *= rScale;
-				iconStyle.offset.x *= rScale;
-				iconStyle.offset.y *= rScale;
+				// getting current size anf offset
+				size = placemark.options.get("iconImageSize");
+				var offset = placemark.options.get("iconOffset");
+				o.iconImageSize = [rScale*size[0], rScale*size[1]];
+				o.iconOffset = [rScale*offset[0], rScale*offset[1]];
 			}
 		}
 
 		var url = this._getIconUrl(isVectorShape, shapeType, src);
-		if (url) iconStyle.href = url;
+		if (url) o.iconImageHref = url;
 
-		yStyle.iconStyle = iconStyle;
-		placemark.setStyle(yStyle);
+		placemark.options.set(o);
 	},
 	
 	applyLineStyle: function(feature, calculatedStyle, coords) {
 		var specificStyle = calculatedStyle.line,
 			specificShapeStyle = P.getSpecificShapeStyle(calculatedStyle.lines, this.specificStyleIndex),
-			polyline = feature.baseShapes[0],
-			style = polyline.getStyle() || new Y.Style(),
-			lineStyle = style.lineStyle || new Y.LineStyle();
+			polyline = feature.baseShapes[0]
+		;
 
-		applyStroke(lineStyle, calculatedStyle, specificStyle, specificShapeStyle);
-
-		style.lineStyle = lineStyle;
-		polyline.setStyle(style);
+		var o = getStrokeOptions(polyline, calculatedStyle, specificStyle, specificShapeStyle);
+		if (o) {
+			polyline.options.set(o);
+		}
 	},
 
 	applyPolygonStyle: function(feature, calculatedStyle, coords) {
@@ -135,21 +117,23 @@ var Placemark = declare([P], {
 		var specificStyle = calculatedStyle.polygon,
 			polygon = feature.baseShapes[0],
 			fill = P.get("fill", calculatedStyle, specificStyle),
-			fillOpacity = P.get("fillOpacity", calculatedStyle, specificStyle),
-			style = polygon.getStyle() || new Y.Style(),
-			polygonStyle = style.polygonStyle || new Y.PolygonStyle();
+			fillOpacity = P.get("fillOpacity", calculatedStyle, specificStyle)
+		;
 
+		// options
+		var o = getStrokeOptions(polygon, calculatedStyle, specificStyle);
 		if (fill || fillOpacity!==undefined) {
-			fill = fill ? fill : getColor(polygonStyle.fillColor);
-			fillOpacity = fillOpacity!==undefined ? fillOpacity : getOpacity(polygonStyle.fillColor);
-			polygonStyle.fillColor = convertColor(fill, fillOpacity);
-			
+			o = o || {};
+			if (fill) {
+				o.fillColor = convertColor(fill);
+			}
+			if (fillOpacity!==undefined) {
+				o.fillOpacity = fillOpacity;
+			}
 		}
-
-		applyStroke(polygonStyle, calculatedStyle, specificStyle);
-
-		style.polygonStyle  = polygonStyle ;
-		polygon.setStyle(style);
+		if (o) {
+			polygon.options.set(o);
+		}
 	},
 	
 	remove: function(feature) {
@@ -174,19 +158,11 @@ var Placemark = declare([P], {
 });
 
 Placemark.init = function() {
-	Y = YMaps;
+	Y = ymaps;
 };
 
-var convertColor = function(c, a) {
-	rgba = new Color(c).toRgba();
-	// convert alpha to [0..255] scale
-	rgba[3] = Math.round(255*a);
-	// convert to hex
-	var rgbaHex = array.map(rgba, function(c){
-		var s = c.toString(16);
-		return s.length < 2 ? "0" + s : s;
-	});
-	return rgbaHex.join('');
+var convertColor = function(c) {
+	return new Color(c).toHex();
 };
 
 var getColor = function(ymapsColor) {
@@ -197,16 +173,25 @@ var getOpacity = function(ymapsColor) {
 	return parseInt(ymapsColor.substring(6), 16) / 255;
 };
 
-var applyStroke = function(ymapsStyle, calculatedStyle, specificStyle, specificShapeStyle) {
+var getStrokeOptions = function(shape, calculatedStyle, specificStyle, specificShapeStyle) {
 	var stroke = P.get("stroke", calculatedStyle, specificStyle, specificShapeStyle),
 		strokeWidth = P.get("strokeWidth", calculatedStyle, specificStyle, specificShapeStyle),
-		strokeOpacity = P.get("strokeOpacity", calculatedStyle, specificStyle, specificShapeStyle);
+		strokeOpacity = P.get("strokeOpacity", calculatedStyle, specificStyle, specificShapeStyle)
+	;
 
 	if (stroke || strokeWidth!==undefined || strokeOpacity!==undefined) {
-		stroke = stroke ? stroke : getColor(ymapsStyle.strokeColor);
-		strokeOpacity = strokeOpacity!==undefined ? strokeOpacity : getOpacity(ymapsStyle.strokeColor);
-		ymapsStyle.strokeColor = convertColor(stroke, strokeOpacity);
-		if (strokeWidth !== undefined) ymapsStyle.strokeWidth = strokeWidth;
+		// options
+		var o = {};
+		if (stroke) {
+			o.strokeColor = convertColor(stroke);
+		}
+		if (strokeOpacity!==undefined) {
+			o.strokeOpacity = strokeOpacity;
+		}
+		if (strokeWidth !== undefined) {
+			o.strokeWidth = strokeWidth;
+		}
+		return o;
 	}
 };
 

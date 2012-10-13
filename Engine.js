@@ -9,9 +9,9 @@ define([
 	"./Placemark"
 ], function(require, declare, lang, array, aspect, script, Engine, Placemark){
 
-var Y = window.YMaps;
+var Y = window.ymaps;
 
-var engineEvents = {click: "Click", mouseover: "MouseEnter", mouseout: "MouseLeave"};
+var engineEvents = {click: "click", mouseover: "mouseenter", mouseout: "mouseleave"};
 
 var supportedLayers = {
 	roadmap: "MAP",
@@ -27,6 +27,7 @@ return declare([Engine], {
 		this._require = require;
 		// set ignored dependencies
 		lang.mixin(this.ignoredDependencies, {"Highlight": 1, "Tooltip": 1});
+		this._supportedLayers = supportedLayers;
 		// initialize basic factories
 		this._initBasicFactories(new Placemark({
 			map: this.map,
@@ -39,10 +40,11 @@ return declare([Engine], {
 			// the first case: Yandex Maps API is completely loaded
 			this.map.projection = "EPSG:4326";
 			var ymap = new Y.Map(this.map.container, {
-				propagateEvents: true
+				propagateEvents: true,
+				center: [0, 0],
+				zoom: 0
 			});
-			ymap.disableDblClickZoom();
-			ymap.disableDragging();
+			ymap.behaviors.disable(["drag", "dblClickZoom"]);
 			this.ymap = ymap;
 			
 			this.initialized = true;
@@ -58,15 +60,18 @@ return declare([Engine], {
 		else {
 			this._initializing = function(){};
 			script.get({
-				url: "http://api-maps.yandex.ru/1.1/index.xml",
+				url: "http://api-maps.yandex.ru/2.0/",
 				content: {
-					loadByRequire: 1,
+					coordorder: "longlat",
+					load: "package.full",
+					mode: "debug",
+					lang: "ru-RU",
 					key: this.map.ymapsKey || require.rawConfig.ymapsKey
 				},
 				load: lang.hitch(this, function() {
-					YMaps.load(lang.hitch(this, function(){
+					ymaps.ready(lang.hitch(this, function(){
 						Placemark.init();
-						Y = YMaps;
+						Y = ymaps;
 						this._initializing();
 						delete this._initializing;
 						this.initialize(readyFunction);
@@ -80,39 +85,21 @@ return declare([Engine], {
 	},
 	
 	appendChild: function(child, feature) {
-		this.ymap.addOverlay(child);
-	},
-	
-	getTopContainer: function() {
-		var features = this.ge.getFeatures();
-		return this.ge;
+		this.ymap.geoObjects.add(child);
 	},
 	
 	onForFeature: function(feature, event, method, context) {
 		// normalize the callback function
 		method = this.normalizeCallback(feature, event, method, context);
-		var connections,
-			featureType = feature.getType();
-		if (featureType == "MultiPolygon" || featureType == "MultiLineString") {
-			connections = [];
-			feature.baseShapes[0].forEach(function(shape){
-				connections.push( Y.Events.observe(shape, shape.Events[engineEvents[event]], method, context) );
-			});
-		}
-		else {
-			var shape = feature.baseShapes[0];
-			connections = Y.Events.observe(shape, shape.Events[engineEvents[event]], method, context);
-		}
-		return connections;
+		var shape = feature.baseShapes[0];
+		shape.events.add(engineEvents[event], method, context);
+		return [[shape, engineEvents[event], method, context]];
 	},
 	
 	disconnect: function(connections) {
-		if (lang.isArray(connections)) {
-			array.forEach(connections, function(connection){
-				connection.cleanup();
-			});
-		}
-		else connections.cleanup();
+		array.forEach(connections, function(con){
+			con[0].events.remove(con[1], con[2], con[3]);
+		});
 	},
 	
 	normalizeCallback: function(feature, event, method, context) {
@@ -128,8 +115,7 @@ return declare([Engine], {
 	},
 	
 	zoomTo: function(extent) {
-		var yBounds = new Y.GeoBounds( new Y.GeoPoint(extent[0],extent[1]), new Y.GeoPoint(extent[2],extent[3]) );
-		this.ymap.setBounds(yBounds);
+		this.ymap.setBounds([[extent[0],extent[1]], [extent[2],extent[3]]]);
 	},
 	
 	destroy: function() {
