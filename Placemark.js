@@ -80,7 +80,7 @@ var Placemark = declare([P], {
 		if (size) {
 			var anchor = isVectorShape ? [size[0]/2, size[1]/2] : P.getAnchor(calculatedStyle, specificStyle, specificShapeStyle, size);
 			o.iconImageSize = [scale*size[0], scale*size[1]];
-			o.iconOffset = [-scale*anchor[0], -scale*anchor[1]];
+			o.iconImageOffset = [-scale*anchor[0], -scale*anchor[1]];
 		}
 		else if (iconImageHref) {
 			// check if we can apply relative scale (rScale)
@@ -88,9 +88,9 @@ var Placemark = declare([P], {
 			if (rScale !== undefined) {
 				// getting current size anf offset
 				size = placemark.options.get("iconImageSize");
-				var offset = placemark.options.get("iconOffset");
+				var offset = placemark.options.get("iconImageOffset");
 				o.iconImageSize = [rScale*size[0], rScale*size[1]];
-				o.iconOffset = [rScale*offset[0], rScale*offset[1]];
+				o.iconImageOffset = [rScale*offset[0], rScale*offset[1]];
 			}
 		}
 
