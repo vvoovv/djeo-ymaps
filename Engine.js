@@ -59,15 +59,18 @@ return declare([Engine], {
 		}
 		else {
 			this._initializing = function(){};
-			script.get({
-				url: "http://api-maps.yandex.ru/2.0/",
-				content: {
+			var content = {
 					coordorder: "longlat",
 					load: "package.full",
-					mode: "debug",
-					lang: "ru-RU",
-					key: this.map.ymapsKey || require.rawConfig.ymapsKey
+					lang: "ru-RU"
 				},
+				// check if we've got a key
+				key = this.map.ymapsKey || require.rawConfig.ymapsKey
+			;
+			if (key) content.key = key;
+			script.get({
+				url: "http://api-maps.yandex.ru/2.0/",
+				content: content,
 				load: lang.hitch(this, function() {
 					ymaps.ready(lang.hitch(this, function(){
 						Placemark.init();
