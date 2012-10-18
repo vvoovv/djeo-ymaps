@@ -141,8 +141,12 @@ var Placemark = declare([P], {
 	},
 	
 	show: function(feature, show) {
-		if (show) this.engine.ymap.addOverlay(feature.baseShapes[0]);
-		else this.engine.ymap.removeOverlay(feature.baseShapes[0]);
+		if (show) this.engine.ymap.geoObjects.add(feature.baseShapes[0]);
+		else this.engine.ymap.geoObjects.remove(feature.baseShapes[0]);
+	},
+
+	setCoords: function(coords, feature) {
+		feature.baseShapes[0].geometry.setCoordinates(coords);
 	},
 	
 	makeText: function(feature, calculatedStyle) {
@@ -163,14 +167,6 @@ Placemark.init = function() {
 
 var convertColor = function(c) {
 	return new Color(c).toHex();
-};
-
-var getColor = function(ymapsColor) {
-	return "#" + ymapsColor.substring(0,6);
-};
-
-var getOpacity = function(ymapsColor) {
-	return parseInt(ymapsColor.substring(6), 16) / 255;
 };
 
 var getStrokeOptions = function(shape, calculatedStyle, specificStyle, specificShapeStyle) {
