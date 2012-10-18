@@ -105,18 +105,6 @@ return declare([Engine], {
 		});
 	},
 	
-	normalizeCallback: function(feature, event, method, context) {
-		// summary:
-		//		Normalizes callback function for events
-		return function(shape, nativeEvent){
-			method.call(context, {
-				type: event,
-				event: nativeEvent,
-				feature: feature
-			});
-		};
-	},
-	
 	zoomTo: function(extent) {
 		this.ymap.setBounds([[extent[0],extent[1]], [extent[2],extent[3]]]);
 	},
