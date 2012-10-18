@@ -14,9 +14,9 @@ var Y = window.ymaps;
 var engineEvents = {click: "click", mouseover: "mouseenter", mouseout: "mouseleave"};
 
 var supportedLayers = {
-	roadmap: "MAP",
-	satellite: "SATELLITE",
-	hybrid: "HYBRID"
+	roadmap: "map",
+	satellite: "satellite",
+	hybrid: "hybrid"
 };
 
 return declare([Engine], {
@@ -127,7 +127,27 @@ return declare([Engine], {
 	
 	enableLayer: function(layerId, enabled) {
 		layerId = layerId.toLowerCase();
-		if (enabled && supportedLayers[layerId]) this.ymap.setType(Y.MapType[supportedLayers[layerId]]);
+		if (enabled && supportedLayers[layerId]) this.ymap.setType("yandex#"+supportedLayers[layerId]);
+	},
+	
+	_setCamera: function(kwArgs) {
+		this.ymap.setCenter(kwArgs.center, kwArgs.zoom);
+	},
+	
+	_set_center: function(center) {
+		this.ymap.setCenter(center);
+	},
+	
+	_get_center: function() {
+		return this.ymap.getCenter();
+	},
+	
+	_set_zoom: function(zoom) {
+		this.ymap.setZoom(zoom);
+	},
+	
+	_get_zoom: function() {
+		return this.ymap.getZoom();
 	}
 });
 
