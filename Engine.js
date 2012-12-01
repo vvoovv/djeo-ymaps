@@ -136,6 +136,11 @@ return declare([Engine], {
 	
 	_get_zoom: function() {
 		return this.ymap.getZoom();
+	},
+	
+	_appendDiv: function(div) {
+		// we append the div to the the first child of this.map.container (<ymaps> element)
+		this.map.container.children[0].appendChild(div);
 	}
 });
 
