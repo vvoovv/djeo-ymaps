@@ -15,11 +15,11 @@ return declare(null, {
 		var ymap = this.map.engine.ymap;
 		if (enable) {
 			ymap.behaviors.enable(["drag", "dblClickZoom", "scrollZoom"]);
-			ymap.events.add('boundschange', _onBoundsChange, this);
+			ymap.events.add("boundschange", _onBoundsChange, this);
 		}
 		else {
 			ymap.behaviors.disable(["scrollZoom", "dblClickZoom", "drag"]);
-			ymap.events.remove('boundschange', _onBoundsChange, this);
+			ymap.events.remove("boundschange", _onBoundsChange, this);
 		}
 	}
 });

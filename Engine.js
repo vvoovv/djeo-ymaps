@@ -9,15 +9,27 @@ define([
 	"./Placemark"
 ], function(require, declare, lang, array, aspect, script, Engine, Placemark){
 
-var Y = window.ymaps;
-
-var engineEvents = {click: "click", mouseover: "mouseenter", mouseout: "mouseleave"};
-
-var supportedLayers = {
+var Y = window.ymaps,
+supportedLayers = {
 	roadmap: "map",
 	satellite: "satellite",
 	hybrid: "hybrid"
-};
+},
+engineEvents = {click: "click", mouseover: "mouseenter", mouseout: "mouseleave"},
+mapEvents = {
+	zoom_changed: 1,
+	click: 1,
+	mousemove: 1
+}
+;
+	
+function _wrapListener(ymap, event, callback, context) {
+	return {
+		remove: function() {
+			ymap.events.remove(event, callback, context);
+		}
+	};
+}
 
 return declare([Engine], {
 	
@@ -27,7 +39,7 @@ return declare([Engine], {
 		this._require = require;
 		// set ignored dependencies
 		lang.mixin(this.ignoredDependencies, {"Highlight": 1, "Tooltip": 1});
-		this._supportedLayers = supportedLayers;
+		this._supportedLayers = {};
 		// initialize basic factories
 		this._initBasicFactories(new Placemark({
 			map: this.map,
@@ -103,6 +115,27 @@ return declare([Engine], {
 		array.forEach(connections, function(con){
 			con[0].events.remove(con[1], con[2], con[3]);
 		});
+	},
+
+	onForMap: function(event, method, context) {
+		var callback = function(e){
+			method.call(context, {
+				mapCoords: e.get("coordPosition"),
+				nativeEvent: e
+			});
+		};
+		this.ymap.events.add(event, callback);
+		return _wrapListener(this.ymap, event, callback);
+	},
+
+	_on_zoom_changed: function(event, method, context) {
+		var callback = function(e){
+			if (e.get("newZoom") != e.get("oldZoom")) {
+				method.call(context);
+			}
+		};
+		this.ymap.events.add("boundschange", callback);
+		return _wrapListener(this.ymap, "boundschange", callback);
 	},
 	
 	zoomTo: function(extent) {
