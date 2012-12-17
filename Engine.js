@@ -50,8 +50,11 @@ return declare([Engine], {
 	initialize: function(/* Function */readyFunction) {
 		if (Y) {
 			// the first case: Yandex Maps API is completely loaded
-			this.map.projection = "EPSG:4326";
-			var ymap = new Y.Map(this.map.container, {
+			var map = this.map;
+			map.projection = "EPSG:4326";
+			var ymap = new Y.Map(map.container, {
+				minZoom: map.minZoom,
+				maxZoom: map.maxZoom,
 				propagateEvents: true,
 				center: [0, 0],
 				zoom: 0
