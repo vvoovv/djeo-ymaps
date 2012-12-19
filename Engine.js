@@ -140,6 +140,11 @@ return declare([Engine], {
 		this.ymap.events.add("boundschange", callback);
 		return _wrapListener(this.ymap, "boundschange", callback);
 	},
+
+	_on_extent_changed: function(event, method, context) {
+		this.ymap.events.add("boundschange", method, context);
+		return _wrapListener(this.ymap, "boundschange", method, context);
+	},
 	
 	zoomTo: function(extent) {
 		this.ymap.setBounds([[extent[0],extent[1]], [extent[2],extent[3]]]);
@@ -172,6 +177,14 @@ return declare([Engine], {
 	
 	_get_zoom: function() {
 		return this.ymap.getZoom();
+	},
+	
+	_get_extent: function() {
+		var bounds = this.ymap.getBounds(),
+			sw = bounds[0],
+			ne = bounds[1]
+		;
+		return [sw[0], sw[1], ne[0], ne[1]];
 	},
 	
 	_appendDiv: function(div) {
