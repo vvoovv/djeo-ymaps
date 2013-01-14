@@ -39,7 +39,7 @@ return declare([Engine], {
 		this._require = require;
 		// set ignored dependencies
 		lang.mixin(this.ignoredDependencies, {"Highlight": 1, "Tooltip": 1});
-		this._supportedLayers = {};
+		this._supportedLayers = supportedLayers;
 		// initialize basic factories
 		this._initBasicFactories(new Placemark({
 			map: this.map,
@@ -157,6 +157,10 @@ return declare([Engine], {
 	enableLayer: function(layerId, enabled) {
 		layerId = layerId.toLowerCase();
 		if (enabled && supportedLayers[layerId]) this.ymap.setType("yandex#"+supportedLayers[layerId]);
+	},
+	
+	getLayerModuleId: function(/* String */layerId) {
+		return null;
 	},
 	
 	_setCamera: function(kwArgs) {

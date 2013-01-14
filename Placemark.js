@@ -3,8 +3,9 @@ define([
 	"dojo/_base/lang", // mixin
 	"dojo/_base/array", // forEach, map
 	"dojo/_base/Color",
+	"djeo/util/_base",
 	"djeo/common/Placemark"
-], function(declare, lang, array, Color, P){
+], function(declare, lang, array, Color, u, P){
 
 var Y = window.YMaps;
 
@@ -66,6 +67,8 @@ var Placemark = declare([P], {
 			isVectorShape = true,
 			scale = P.getScale(calculatedStyle, specificStyle, specificShapeStyle),
 			iconImageHref = placemark.options.get("iconImageHref"),
+			heading = feature.orientation,
+			hasHeading = feature.map.simulateOrientation && heading !== undefined,
 			// options
 			o = {}
 		;
@@ -95,6 +98,13 @@ var Placemark = declare([P], {
 		}
 
 		var url = this._getIconUrl(isVectorShape, shapeType, src);
+		if (hasHeading) {
+			if (lang.isObject(heading)) heading = heading.heading;
+			heading = Math.round(u.radToDeg(heading));
+			if (heading<0) heading = 360 + heading;
+			o.iconImageClipRect = [[0, size[1]*heading], [size[0], size[1]*(heading+1)]];
+			if (url) url = getSpriteUrl(feature, url);
+		}
 		if (url) o.iconImageHref = url;
 
 		placemark.options.set(o);
@@ -144,20 +154,31 @@ var Placemark = declare([P], {
 		if (show) this.engine.ymap.geoObjects.add(feature.baseShapes[0]);
 		else this.engine.ymap.geoObjects.remove(feature.baseShapes[0]);
 	},
-
-	setCoords: function(coords, feature) {
-		feature.baseShapes[0].geometry.setCoordinates(coords);
-	},
 	
 	makeText: function(feature, calculatedStyle) {
 	},
 	
-	translate: function(newPoint, feature) {
-
+	setCoords: function(coords, feature) {
+		feature.baseShapes[0].geometry.setCoordinates(coords);
 	},
+	
+	setOrientation: function(o, feature) {
+		// orientation is actually heading
+		if (!feature.map.simulateOrientation) return;
+		var placemark = feature.baseShapes[0],
+			heading = Math.round(u.radToDeg(o)),
+			size = placemark.options.get("iconImageSize")
+		;
+		var url = feature.reg.url;
+		if (!url) {
+			url = getSpriteUrl(feature, placemark.options.get("iconImageHref"));
+		}
+		if (heading<0) heading = 360 + heading;
 
-	rotate: function(orientation, feature) {
-
+		placemark.options.set({
+			iconImageHref: url,
+			iconImageClipRect: [[0, size[1]*heading], [size[0], size[1]*(heading+1)]]
+		});
 	}
 });
 
@@ -165,11 +186,11 @@ Placemark.init = function() {
 	Y = ymaps;
 };
 
-var convertColor = function(c) {
+function convertColor(c) {
 	return new Color(c).toHex();
 };
 
-var getStrokeOptions = function(shape, calculatedStyle, specificStyle, specificShapeStyle) {
+function getStrokeOptions(shape, calculatedStyle, specificStyle, specificShapeStyle) {
 	var stroke = P.get("stroke", calculatedStyle, specificStyle, specificShapeStyle),
 		strokeWidth = P.get("strokeWidth", calculatedStyle, specificStyle, specificShapeStyle),
 		strokeOpacity = P.get("strokeOpacity", calculatedStyle, specificStyle, specificShapeStyle)
@@ -190,6 +211,16 @@ var getStrokeOptions = function(shape, calculatedStyle, specificStyle, specificS
 		return o;
 	}
 };
+
+function getSpriteUrl(feature, url) {
+	var fileName = url.match(/\b\w+\.\w{3,4}$/)[0],
+		fileName_ = fileName.split("."),
+		path = url.substr(0, url.length-fileName_[0].length-fileName_[1].length-1)
+	;
+	url = path + fileName_[0] + "_" + fileName_[1] + "/" + fileName;
+	feature.reg.url = url;
+	return url;
+}
 
 return Placemark;
 });
