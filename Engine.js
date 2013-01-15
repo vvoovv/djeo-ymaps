@@ -6,11 +6,12 @@ define([
 	"dojo/aspect", // after
 	"dojo/io/script", // get
 	"djeo/Engine",
-	"./Placemark"
-], function(require, declare, lang, array, aspect, script, Engine, Placemark){
+	"./Placemark",
+	"djeo/_tiles"
+], function(require, declare, lang, array, aspect, script, Engine, Placemark, supportedLayers){
 
 var Y = window.ymaps,
-supportedLayers = {
+wellKnownLayers = {
 	roadmap: "map",
 	satellite: "satellite",
 	hybrid: "hybrid"
@@ -22,6 +23,9 @@ mapEvents = {
 	mousemove: 1
 }
 ;
+
+// mixing supportedLayers and wellKnownLayers
+supportedLayers = lang.mixin(lang.mixin({}, supportedLayers), wellKnownLayers);
 	
 function _wrapListener(ymap, event, callback, context) {
 	return {
@@ -57,7 +61,8 @@ return declare([Engine], {
 				maxZoom: map.maxZoom,
 				propagateEvents: true,
 				center: [0, 0],
-				zoom: 0
+				zoom: 0,
+				type: null
 			});
 			ymap.behaviors.disable(["drag", "dblClickZoom"]);
 			this.ymap = ymap;
@@ -154,13 +159,25 @@ return declare([Engine], {
 		
 	},
 	
-	enableLayer: function(layerId, enabled) {
-		layerId = layerId.toLowerCase();
-		if (enabled && supportedLayers[layerId]) this.ymap.setType("yandex#"+supportedLayers[layerId]);
+	enableLayer: function(/* String|Object */layerId, /* Boolean */enabled) {
+		if (lang.isString(layerId)) {
+			// check if layerId is in wellKnownLayers
+			var layerId_ = layerId.toLowerCase();
+			if (layerId_ in wellKnownLayers) {
+				if (enabled) this.ymap.setType("yandex#"+wellKnownLayers[layerId_]);
+			}
+			else {
+				this.inherited(arguments);
+			}
+		}
+		else {
+			this.inherited(arguments);
+		}
 	},
-	
+
 	getLayerModuleId: function(/* String */layerId) {
-		return null;
+		if (layerId.toLowerCase() in wellKnownLayers) return null;
+		return this.inherited(arguments);
 	},
 	
 	_setCamera: function(kwArgs) {
