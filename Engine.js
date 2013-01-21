@@ -152,7 +152,8 @@ return declare([Engine], {
 	},
 	
 	zoomTo: function(extent) {
-		this.ymap.setBounds([[extent[0],extent[1]], [extent[2],extent[3]]]);
+		var x2 = extent[2] < 180 ? extent[2] : 179.999;
+		this.ymap.setBounds([[extent[0],extent[1]], [x2,extent[3]]]);
 	},
 	
 	destroy: function() {
